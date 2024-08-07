@@ -51,7 +51,14 @@ namespace Spectrum.Visualizers {
       // in another thread
       Dictionary<int, OrientationDevice> devices;
       devices = new Dictionary<int, OrientationDevice>(orientation.devices);
-
+      Dictionary<int, float> devicesSpeed;
+      devicesSpeed = new Dictionary<int, float>();
+      Dictionary<int, Scaler> devicesScale;
+      devicesScale = new Dictionary<int, Scaler>();
+      foreach (var key in devices.Keys) {
+        devicesSpeed[key] = 0.0f;
+        devicesScale[key] = new Scaler();
+      }
       for (int i = 0; i < buffer.pixels.Length; i++) {
         var p = buffer.pixels[i];
         var x = 2 * p.x - 1; // now centered on (0, 0) and with range [-1, 1]
@@ -62,17 +69,25 @@ namespace Spectrum.Visualizers {
         // # Spotlight - orientation sensor dot
         // Calibration assigns (0, 1, 0) to be 'forward'
         // So we want the post-transformed pixel closest to (0, 1, 0)?
-        double radius = .2;
-
+        double radius = .4;
         foreach (int deviceId in devices.Keys) {
           Quaternion currentOrientation = devices[deviceId].currentRotation();
+          
+          float currentSpeed = devices[deviceId].SumDistances();
+          if (devicesSpeed[deviceId] != currentSpeed) {
+            Console.WriteLine(currentSpeed);
+            devicesSpeed[deviceId] = currentSpeed;
+          }
           double distance = Vector3.Distance(Vector3.Transform(pixelPoint, currentOrientation), spot);
           int sat = 1;
           if (devices[deviceId].actionFlag == 1) {
             radius = .4;
             sat = 0;
           } else {
-            radius = .2;
+            radius = 1 - devicesScale[deviceId].Scale(currentSpeed);
+            if ( radius < 0.1f ) {
+              radius = 0.1f;
+            }
             sat = 1;
           }
           if (distance < radius) {
@@ -91,4 +106,38 @@ namespace Spectrum.Visualizers {
       dome.Flush();
     }
   }
+    public class Scaler {
+      private double _minValue = 0;
+      private double _maxValue = 175;
+
+    // Method to scale a value between 0 and 1
+    public double Scale(double value) {
+      if (_minValue == _maxValue) return 0.5;
+
+      // Linearly scale the value between 0 and 1
+      double scale = (value - _minValue) / (_maxValue - _minValue);
+
+      // Apply exponential scaling
+      scale = Math.Pow(scale, 2);
+
+      // Clamping the value between 0.2 and 0.9
+      scale = Math.Max(0.4, Math.Min(0.9, scale));
+      // 1.5 - 9
+      double out_val = (1 - scale) * 20;
+      out_val = Math.Max(2, Math.Min(12, out_val));
+      //Console.WriteLine(out_val);
+      return out_val;
+    }
+
+    // Optional: Method to reset the scaler
+    public void Reset() {
+        _minValue = double.MaxValue;
+        _maxValue = double.MinValue;
+      }
+
+      // Optional: Method to get current min and max values
+      public double MinValue => _minValue;
+      public double MaxValue => _maxValue;
+    }
+
 }
