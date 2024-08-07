@@ -51,7 +51,11 @@ namespace Spectrum.Visualizers {
       // in another thread
       Dictionary<int, OrientationDevice> devices;
       devices = new Dictionary<int, OrientationDevice>(orientation.devices);
-
+      Dictionary<int, float> devicesSpeed;
+      devicesSpeed = new Dictionary<int, float>();
+      foreach (var key in devices.Keys) {
+        devicesSpeed[key] = 0.0f;
+      }
       for (int i = 0; i < buffer.pixels.Length; i++) {
         var p = buffer.pixels[i];
         var x = 2 * p.x - 1; // now centered on (0, 0) and with range [-1, 1]
@@ -62,17 +66,22 @@ namespace Spectrum.Visualizers {
         // # Spotlight - orientation sensor dot
         // Calibration assigns (0, 1, 0) to be 'forward'
         // So we want the post-transformed pixel closest to (0, 1, 0)?
-        double radius = .2;
-
+        double radius = .4;
         foreach (int deviceId in devices.Keys) {
           Quaternion currentOrientation = devices[deviceId].currentRotation();
+          
+          float currentSpeed = devices[deviceId].ApproximateSpeed();
+          if (devicesSpeed[deviceId] != currentSpeed) {
+            Console.WriteLine(currentSpeed);
+            devicesSpeed[deviceId] = currentSpeed;
+          }
           double distance = Vector3.Distance(Vector3.Transform(pixelPoint, currentOrientation), spot);
           int sat = 1;
           if (devices[deviceId].actionFlag == 1) {
             radius = .4;
             sat = 0;
           } else {
-            radius = .2;
+            radius = .4;
             sat = 1;
           }
           if (distance < radius) {
