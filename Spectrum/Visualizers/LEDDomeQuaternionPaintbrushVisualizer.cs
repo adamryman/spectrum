@@ -416,18 +416,21 @@ namespace Spectrum.Visualizers {
               // So we sum both 'ends' at once (i.e. (0, 1, 0) and (0, -1, 0) are identified as the same point)
               double distance = Vector3.Distance(Vector3.Transform(pixelPoint, currentOrientation), spot);
               double negadistance = Vector3.Distance(Vector3.Transform(pixelPoint, currentOrientation), Vector3.Negate(spot));
-              double scale = 1 / (distance * negadistance);
+              //double scale = 1 / (distance * negadistance);
+              double scale = 1 / negadistance;
               scale = scale * devicesScaler[deviceId].Scale(devices[deviceId].SumDistances());
 
               //Console.WriteLine(scale);
               if (devices[deviceId].actionFlag == 1 | devices[deviceId].actionFlag == 2 | devices[deviceId].actionFlag == 3) {
                 scale = scale * 4; // 'bonus' from button press; dial this in later
               }
+              colorCenter += Quaternion.Multiply(currentOrientation, (float)scale);
+              /*
               if (distance < negadistance) {
                 colorCenter += Quaternion.Multiply(currentOrientation, (float)scale);
               } else {
                 colorCenter -= Quaternion.Multiply(currentOrientation, (float)scale);
-              }
+              }*/
               potential += scale;
             }
             colorCenter = Quaternion.Normalize(colorCenter);

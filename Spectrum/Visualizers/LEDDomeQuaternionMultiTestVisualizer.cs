@@ -106,39 +106,35 @@ namespace Spectrum.Visualizers {
       dome.Flush();
     }
   }
-  public class Scaler {
-    private double _minValue = 0;
-    private double _maxValue = 175;
+    public class Scaler {
+      private double _minValue = 0;
+      private double _maxValue = 175;
 
     // Method to scale a value between 0 and 1
     public double Scale(double value) {
-      // Update the min and max values seen so far
-      //if (value < _minValue) _minValue = value;
-      //if (value > _maxValue) _maxValue = value;
-
-      // Handle the case where the min and max are the same
       if (_minValue == _maxValue) return 0.5;
 
       // Linearly scale the value between 0 and 1
-      double scale = (1 - (value - _minValue) / (_maxValue - _minValue));
-      if (scale > .9) {
-        scale = .9;
-      }
-      if (scale < .2 ){
-        scale = .2;
-      }
-      return (scale)*10;
+      double scale = (value - _minValue) / (_maxValue - _minValue);
+
+      // Apply exponential scaling
+      scale = Math.Pow(scale, 2);
+
+      // Clamping the value between 0.2 and 0.9
+      scale = Math.Max(0.4, Math.Min(0.9, scale));
+
+      return (1-scale) * 5;
     }
 
     // Optional: Method to reset the scaler
     public void Reset() {
-      _minValue = double.MaxValue;
-      _maxValue = double.MinValue;
-    }
+        _minValue = double.MaxValue;
+        _maxValue = double.MinValue;
+      }
 
-    // Optional: Method to get current min and max values
-    public double MinValue => _minValue;
-    public double MaxValue => _maxValue;
-  }
+      // Optional: Method to get current min and max values
+      public double MinValue => _minValue;
+      public double MaxValue => _maxValue;
+    }
 
 }
