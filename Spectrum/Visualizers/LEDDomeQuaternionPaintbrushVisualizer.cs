@@ -416,8 +416,8 @@ namespace Spectrum.Visualizers {
               // So we sum both 'ends' at once (i.e. (0, 1, 0) and (0, -1, 0) are identified as the same point)
               double distance = Vector3.Distance(Vector3.Transform(pixelPoint, currentOrientation), spot);
               double negadistance = Vector3.Distance(Vector3.Transform(pixelPoint, currentOrientation), Vector3.Negate(spot));
-              //double scale = 1 / (distance * negadistance);
-              double scale = 1 / negadistance;
+              double scale = 1 / (distance * negadistance);
+              //double scale = 1 / negadistance;
               scale = scale * devicesScaler[deviceId].Scale(devices[deviceId].SumDistances());
 
               //Console.WriteLine(scale);

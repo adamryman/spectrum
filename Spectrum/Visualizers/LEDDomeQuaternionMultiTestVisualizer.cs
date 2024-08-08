@@ -122,8 +122,11 @@ namespace Spectrum.Visualizers {
 
       // Clamping the value between 0.2 and 0.9
       scale = Math.Max(0.4, Math.Min(0.9, scale));
-
-      return (1-scale) * 5;
+      // 1.5 - 9
+      double out_val = (1 - scale) * 20;
+      out_val = Math.Max(2, Math.Min(12, out_val));
+      //Console.WriteLine(out_val);
+      return out_val;
     }
 
     // Optional: Method to reset the scaler
