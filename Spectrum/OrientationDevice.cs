@@ -22,7 +22,7 @@ namespace Spectrum {
       this.currentOrientation = currentOrientation;
       actionFlag = 0;
       // Instantiate the buffer
-      distanceBuffer = new Queue<Tuple<int, float>>(50);
+      distanceBuffer = new Queue<Tuple<int, float>>(500);
       // Initialize last orientation
       lastOrientation = currentOrientation;
       lastTimestamp = timestamp;
@@ -44,7 +44,7 @@ namespace Spectrum {
           float distance = CalculateDistance(lastOrientation, orientation);
           int timeDiff = timestamp - this.timestamp;
           //Console.WriteLine(timeDiff);
-          if (distanceBuffer.Count == 50) {
+          if (distanceBuffer.Count == 500) {
             distanceBuffer.Dequeue(); // Remove the oldest entry if buffer is full
           }
           distanceBuffer.Enqueue(new Tuple<int, float>(timeDiff, distance));

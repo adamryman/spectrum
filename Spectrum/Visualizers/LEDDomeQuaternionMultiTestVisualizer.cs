@@ -120,7 +120,14 @@ namespace Spectrum.Visualizers {
       if (_minValue == _maxValue) return 0.5;
 
       // Linearly scale the value between 0 and 1
-      return (1-(value - _minValue) / (_maxValue - _minValue))*5;
+      double scale = (1 - (value - _minValue) / (_maxValue - _minValue));
+      if (scale > .9) {
+        scale = .9;
+      }
+      if (scale < .2 ){
+        scale = .2;
+      }
+      return (scale)*10;
     }
 
     // Optional: Method to reset the scaler

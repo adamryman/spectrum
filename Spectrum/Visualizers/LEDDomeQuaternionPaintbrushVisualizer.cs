@@ -364,7 +364,7 @@ namespace Spectrum.Visualizers {
         showImage = true;
       }
       showImage = false; // delete me
-      double thresholdFactor = (config.domeRadialSize / 2) + level + .05; // tweak this
+      double thresholdFactor = (config.domeRadialSize / 4) + level + .01; // tweak this
       double threshold = 2 / thresholdFactor;
 
       // Big pixel painting loop
@@ -418,6 +418,7 @@ namespace Spectrum.Visualizers {
               double negadistance = Vector3.Distance(Vector3.Transform(pixelPoint, currentOrientation), Vector3.Negate(spot));
               double scale = 1 / (distance * negadistance);
               scale = scale * devicesScaler[deviceId].Scale(devices[deviceId].SumDistances());
+
               //Console.WriteLine(scale);
               if (devices[deviceId].actionFlag == 1 | devices[deviceId].actionFlag == 2 | devices[deviceId].actionFlag == 3) {
                 scale = scale * 4; // 'bonus' from button press; dial this in later
