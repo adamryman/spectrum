@@ -9,15 +9,23 @@ namespace Spectrum {
     public Quaternion currentOrientation { get; set; }
     public int actionFlag { get; set; }
 
-    // Buffer to store last 10 orientation states and their timestamps
-    private Queue<Tuple<int, Quaternion>> orientationBuffer;
+
+    // Buffer to store last 10 distances and their timestamps
+    private Queue<Tuple<int, float>> distanceBuffer; // Buffer to store distances and time differences
+    private Quaternion lastOrientation; // Variable to store the last orientation
+    private int lastTimestamp;
+
 
     public OrientationDevice(int timestamp, Quaternion calibrationOrigin, Quaternion currentOrientation) {
       this.timestamp = timestamp;
       this.calibrationOrigin = calibrationOrigin;
       this.currentOrientation = currentOrientation;
       actionFlag = 0;
-      orientationBuffer = new Queue<Tuple<int, Quaternion>>(10);
+      // Instantiate the buffer
+      distanceBuffer = new Queue<Tuple<int, float>>(50);
+      // Initialize last orientation
+      lastOrientation = currentOrientation;
+      lastTimestamp = timestamp;
       StoreOrientation(timestamp, currentOrientation);
     }
 
@@ -30,55 +38,67 @@ namespace Spectrum {
     }
 
     public void StoreOrientation(int timestamp, Quaternion orientation) {
-      // Store the orientation with timestamp
-      if (orientationBuffer.Count == 10) {
-        orientationBuffer.Dequeue(); // Remove the oldest entry if buffer is full
+      lock (distanceBuffer) {
+        // Calculate the distance moved on the sphere since the last orientation
+        if (lastOrientation != null) {
+          float distance = CalculateDistance(lastOrientation, orientation);
+          int timeDiff = timestamp - this.timestamp;
+          //Console.WriteLine(timeDiff);
+          if (distanceBuffer.Count == 50) {
+            distanceBuffer.Dequeue(); // Remove the oldest entry if buffer is full
+          }
+          distanceBuffer.Enqueue(new Tuple<int, float>(timeDiff, distance));
+        }
+
+        // Update last orientation and timestamp
+        lastOrientation = orientation;
+        this.timestamp = timestamp;
       }
-      orientationBuffer.Enqueue(new Tuple<int, Quaternion>(timestamp, orientation));
     }
 
-    public float ApproximateSpeed() {
-      lock (orientationBuffer) {
-        if (orientationBuffer == null || orientationBuffer.Count < 2) {
-          return 0.0f; // Not enough data to calculate speed or buffer is not initialized
+    private float CalculateDistance(Quaternion prevOrientation, Quaternion currOrientation) {
+      // Ensure the shortest path is taken by checking the dot product
+      float dot = Quaternion.Dot(prevOrientation, currOrientation);
+
+      // If the dot product is negative, negate one quaternion to ensure the shortest arc is calculated
+      if (dot < 0.0f) {
+        currOrientation = new Quaternion(-currOrientation.X, -currOrientation.Y, -currOrientation.Z, -currOrientation.W);
+        dot = -dot;
+      }
+
+      // Calculate the angle between the two orientations
+      Quaternion deltaOrientation = Quaternion.Multiply(currOrientation, Quaternion.Inverse(prevOrientation));
+      float angle = 2.0f * (float)Math.Acos(Math.Min(Math.Abs(deltaOrientation.W), 1.0f));
+
+      return angle; // On a unit sphere, the angle is the arc length, which is the distance
+    }
+    public float SumDistances() {
+      // Make a copy of the buffer to work with, ensuring thread safety
+      if (distanceBuffer == null) {
+        return 0.0f;
+      }
+        lock (distanceBuffer) {
+        Tuple<int, float>[] bufferCopy = distanceBuffer.ToArray();
+
+        float totalDistance = 0.0f;
+        int distancesSummed = 0;
+
+        // No need to lock bufferCopy because it is a local copy and thread-safe
+        //Console.WriteLine();
+        foreach (var entry in bufferCopy) {
+          // Ensure division is safe, guard against divide by zero
+          if (entry.Item1 != 0) {
+            //Console.WriteLine(entry.Item2);
+            totalDistance += (entry.Item2 * (float)entry.Item1) * 100;
+            distancesSummed += 1;
+          } else { 
+          Console.WriteLine("zerofound");
         }
-
-        float totalAngleChange = 0.0f;
-        float totalTime = 0.0f;
-        // Convert the queue to an array
-        // Ensure the operation is thread-safe
-        Tuple<int, Quaternion>[] bufferCopy;
-        try {
-          bufferCopy = orientationBuffer.ToArray();
         }
+        // Console.WriteLine()
+       // return ((totalDistance));
 
-        catch (ArgumentException ex) {
-          // Handle the case where the array conversion fails
-          // Return a default value or handle the exception accordingly
-          return 0.0f;
-        }
-
-
-        for (int i = 1; i < bufferCopy.Length; i++) {
-          var previous = bufferCopy[i - 1];
-          var current = bufferCopy[i];
-
-          // Check for null entries in bufferCopy
-          if (previous == null || current == null) {
-            continue; // Skip any null entries
-          }
-
-          int timeDiff = current.Item1 - previous.Item1;
-          Quaternion deltaOrientation = Quaternion.Multiply(current.Item2, Quaternion.Inverse(previous.Item2));
-          float angle = 2.0f * (float)Math.Acos(deltaOrientation.W);
-          float angleDegrees = angle * (180.0f / (float)Math.PI);
-
-          totalAngleChange += angleDegrees;
-          totalTime += timeDiff / 1000.0f; // Convert to seconds
-        }
-
-        // Approximate speed as the total angular change divided by the total time
-        return totalTime > 0 ? totalAngleChange / totalTime : 0.0f;
+        return (float)(int)((totalDistance / (float)distancesSummed));
       }
     }
   }

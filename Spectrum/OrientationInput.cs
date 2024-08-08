@@ -79,9 +79,9 @@ namespace Spectrum {
             // Debounce logic remains the same...
           }
           if (timestamp > device.timestamp || timestamp < (device.timestamp - 1000)) {
-            device.timestamp = timestamp;
             device.currentOrientation = sensorState;
             device.StoreOrientation(timestamp, sensorState); // Store the new orientation in the buffer
+            device.timestamp = timestamp;
           }
         }
       }

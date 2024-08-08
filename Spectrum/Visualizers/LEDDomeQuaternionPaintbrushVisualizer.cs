@@ -221,6 +221,11 @@ namespace Spectrum.Visualizers {
       Dictionary<int, OrientationDevice> devices;
       devices = new Dictionary<int, OrientationDevice>(orientation.devices);
 
+      Dictionary<int, Scaler> devicesScaler;
+      devicesScaler = new Dictionary<int, Scaler>();
+      foreach (var key in devices.Keys) {
+        devicesScaler[key] = new Scaler();
+      }
       if (devices.ContainsKey(config.orientationDeviceSpotlight)) {
         spotlightId = config.orientationDeviceSpotlight;
         spotlightCenter = devices[spotlightId].currentRotation();
@@ -258,7 +263,8 @@ namespace Spectrum.Visualizers {
         idle = true;
       }
       // end hack
-      if (idle) {
+     // if (idle) {
+     if (false) { 
         // Sensor not apparently moving
         // randomly nudge pointer
         // enforce unit-ness
@@ -358,7 +364,7 @@ namespace Spectrum.Visualizers {
         showImage = true;
       }
       showImage = false; // delete me
-      double thresholdFactor = (config.domeRadialSize / 4) + level + .01; // tweak this
+      double thresholdFactor = (config.domeRadialSize / 2) + level + .05; // tweak this
       double threshold = 2 / thresholdFactor;
 
       // Big pixel painting loop
@@ -411,6 +417,8 @@ namespace Spectrum.Visualizers {
               double distance = Vector3.Distance(Vector3.Transform(pixelPoint, currentOrientation), spot);
               double negadistance = Vector3.Distance(Vector3.Transform(pixelPoint, currentOrientation), Vector3.Negate(spot));
               double scale = 1 / (distance * negadistance);
+              scale = scale * devicesScaler[deviceId].Scale(devices[deviceId].SumDistances());
+              //Console.WriteLine(scale);
               if (devices[deviceId].actionFlag == 1 | devices[deviceId].actionFlag == 2 | devices[deviceId].actionFlag == 3) {
                 scale = scale * 4; // 'bonus' from button press; dial this in later
               }
@@ -429,7 +437,7 @@ namespace Spectrum.Visualizers {
           // 'absolute' metaball - just a crisp cutoff at threshold
           if (strength > 0) {
             // At the high volumes, desaturate
-            double saturation = Clamp(1.3 / level - 1, .2, 1);
+            double saturation = Clamp(1.3 / level - 0.5, .2, 1);
             Color color = new Color(metaballhue, saturation, 1);
             buffer.pixels[i].color = Color.BlendLightPaint(new Color(buffer.pixels[i].color), color).ToInt();
           }
@@ -551,4 +559,5 @@ namespace Spectrum.Visualizers {
       return (vector.W == 0 & vector.X == 0 & vector.Y == 0 & vector.Z == 0);
     }
   }
+
 }

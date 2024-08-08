@@ -53,8 +53,11 @@ namespace Spectrum.Visualizers {
       devices = new Dictionary<int, OrientationDevice>(orientation.devices);
       Dictionary<int, float> devicesSpeed;
       devicesSpeed = new Dictionary<int, float>();
+      Dictionary<int, Scaler> devicesScale;
+      devicesScale = new Dictionary<int, Scaler>();
       foreach (var key in devices.Keys) {
         devicesSpeed[key] = 0.0f;
+        devicesScale[key] = new Scaler();
       }
       for (int i = 0; i < buffer.pixels.Length; i++) {
         var p = buffer.pixels[i];
@@ -70,7 +73,7 @@ namespace Spectrum.Visualizers {
         foreach (int deviceId in devices.Keys) {
           Quaternion currentOrientation = devices[deviceId].currentRotation();
           
-          float currentSpeed = devices[deviceId].ApproximateSpeed();
+          float currentSpeed = devices[deviceId].SumDistances();
           if (devicesSpeed[deviceId] != currentSpeed) {
             Console.WriteLine(currentSpeed);
             devicesSpeed[deviceId] = currentSpeed;
@@ -81,7 +84,10 @@ namespace Spectrum.Visualizers {
             radius = .4;
             sat = 0;
           } else {
-            radius = .4;
+            radius = 1 - devicesScale[deviceId].Scale(currentSpeed);
+            if ( radius < 0.1f ) {
+              radius = 0.1f;
+            }
             sat = 1;
           }
           if (distance < radius) {
@@ -100,4 +106,32 @@ namespace Spectrum.Visualizers {
       dome.Flush();
     }
   }
+  public class Scaler {
+    private double _minValue = 0;
+    private double _maxValue = 175;
+
+    // Method to scale a value between 0 and 1
+    public double Scale(double value) {
+      // Update the min and max values seen so far
+      //if (value < _minValue) _minValue = value;
+      //if (value > _maxValue) _maxValue = value;
+
+      // Handle the case where the min and max are the same
+      if (_minValue == _maxValue) return 0.5;
+
+      // Linearly scale the value between 0 and 1
+      return (1-(value - _minValue) / (_maxValue - _minValue))*5;
+    }
+
+    // Optional: Method to reset the scaler
+    public void Reset() {
+      _minValue = double.MaxValue;
+      _maxValue = double.MinValue;
+    }
+
+    // Optional: Method to get current min and max values
+    public double MinValue => _minValue;
+    public double MaxValue => _maxValue;
+  }
+
 }
